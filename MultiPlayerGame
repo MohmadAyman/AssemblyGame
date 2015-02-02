@@ -1,0 +1,793 @@
+AssemblyGame
+============
+
+Data_segment_name segment para
+stick11 db 10d
+stick12 db 11d
+stick13 db 12d	
+stick21 db 10d
+stick22 db 11d
+stick23 db 12d
+ballx db 3
+bally db 11d
+delayvalue db 0
+angle_dh db 0
+vectory db 00
+score1 db 00
+score2 db 0
+ok db 0
+has_the_ball db 1  ;one is controlling ,or 2 is controlling
+hit db 0
+recived db ?
+to_be_sent db ?
+you_are_player db 1
+Data_segment_name ends 
+
+Stack_segment_name segment para stack 
+dw 16 dup(0) ;define your stack segment 
+Stack_segment_name ends 
+
+Code_segment_name segment 
+initialize proc far
+mov DX,3fbh
+mov al,10000000b
+out dx,al
+mov dx,3f8h
+mov al,0ch
+out dx,al
+mov dx,3f9h
+mov al,00h
+out dx,al
+mov al,00011011b
+mov dx,3fbh
+out dx,al
+retf
+initialize endp
+
+binitialize proc far
+mov DX,3fbh
+mov al,10000000b
+out dx,al
+mov dx,3f8h
+mov al,0ch
+out dx,al
+mov dx,3f9h
+mov al,00h
+out dx,al
+mov al,01011011b
+mov dx,3fbh
+out dx,al
+retf
+binitialize endp
+
+
+cursor proc far
+mov bh,00  ;dh rows ;dl cols
+mov ah,02h  
+int 10h
+retf
+cursor endp
+
+print_l proc far
+push (cx)
+mov al,7ch ;;chr
+mov cx,01h ;no of keys 
+mov bh,00h ;page number
+mov bl,0Eh ;att
+mov ah,09 
+int 10h
+pop (cx)
+retf
+print_l endp
+
+clear proc far
+push (cx)
+mov al,02
+mov cx,01h
+mov bh,00h
+mov bl,0Eh
+mov ah,09
+int 10h
+pop (cx)
+retf
+clear endp
+
+print_O proc far
+push (cx)
+mov al,01 ;;chr
+mov cx,01h ;no of keys 
+mov bh,00h ;page number
+mov bl,0Eh ;att
+mov ah,09 
+int 10h
+pop (cx)
+retf
+print_O endp
+
+clear_screen proc far
+assume SS:Stack_segment_name,CS:Code_segment_name,DS:Data_segment_name 
+push (cx)
+mov ax, 0b800h
+mov es, ax
+mov di,0
+mov ax,0720h
+mov cx,80*24
+P: stosw
+loop P
+pop (cx)
+retf
+clear_screen endp
+
+print_all proc far
+mov dh,stick11
+mov dl,3
+call cursor
+call print_l
+mov dh,stick12
+mov dl,3
+call cursor
+call print_l
+mov dh,stick13
+mov dl,3
+call cursor
+call print_l
+mov dh,stick21
+mov dl,77d
+call cursor
+call print_l
+mov dh,stick22
+mov dl,77d
+call cursor
+call print_l
+mov dh,stick23
+mov dl,77d
+call cursor
+call print_l
+mov dh,bally
+mov dl,ballx
+call cursor
+call print_O
+retf
+print_all endp
+
+check_move_2 proc far
+push (cx)
+mov ah,01h
+int 16h
+jz ens
+cmp ah,48h
+mov ah,00
+int 16h
+jnz d_arrow2ss
+mov dh,stick23
+mov dl,77
+call cursor
+call clear
+dec stick21
+mov dh,stick21
+mov dl,77
+call cursor
+call print_l
+dec stick22
+dec stick23
+jmp ens
+d_arrow2ss:
+mov dh,stick21
+mov dl,77
+call cursor
+call clear
+inc stick23
+mov dh,stick23
+mov dl,77
+call cursor
+call print_l
+inc stick22
+inc stick21
+ens:pop (cx)
+retf
+check_move_2 endp
+
+check_move proc far
+push (cx)
+mov ah,01h
+int 16h
+jz en
+cmp ah,48h
+mov ah,00
+int 16h
+jnz d_arrow2
+mov dh,stick13
+mov dl,3
+call cursor
+call clear
+dec stick11
+mov dh,stick11
+mov dl,3
+call cursor
+call print_l
+dec stick12
+dec stick13
+jmp en
+d_arrow2:
+mov dh,stick11
+mov dl,3
+call cursor
+call clear
+inc stick13
+mov dh,stick13
+mov dl,3
+call cursor
+call print_l
+inc stick12
+inc stick11
+en:pop (cx)
+retf
+check_move endp
+
+not_yet_2 proc far
+cmp ah,48h
+jnz d_arrows
+mov dh,stick23
+mov dl,77
+call cursor
+call clear
+dec stick21
+mov dh,stick21
+mov dl,77
+call cursor
+call print_l
+dec stick22
+dec stick23
+mov ah,00
+int 16h
+push ax
+mov al,stick22
+mov bally,al 
+pop ax ;;;;;;;;
+call clear_screen
+call print_all
+jmp ths
+d_arrows:
+mov dh,stick21
+mov dl,77
+call cursor
+call clear
+inc stick23
+mov dh,stick23
+mov dl,77
+call cursor
+call print_l
+inc stick22
+inc stick21
+mov ah,00
+int 16h
+push ax
+mov al,stick22
+mov bally,al 
+pop ax
+call clear_screen
+call print_all
+ths:
+retf
+not_yet_2 endp
+
+not_yet_1 proc far
+cmp ah,48h
+jnz d_arrow
+mov dh,stick13
+mov dl,3
+call cursor
+call clear
+dec stick11
+mov dh,stick11
+mov dl,3
+call cursor
+call print_l
+dec stick12
+dec stick13
+mov ah,00
+int 16h
+push ax
+mov al,stick12
+mov bally,al 
+pop ax ;;;;;;;;
+call clear_screen
+call print_all
+jmp th
+d_arrow:
+mov dh,stick11
+mov dl,3
+call cursor
+call clear
+inc stick13
+mov dh,stick13
+mov dl,3
+call cursor
+call print_l
+inc stick12
+inc stick11
+mov ah,00
+int 16h
+push ax
+mov al,stick12
+mov bally,al 
+pop ax
+call clear_screen
+call print_all
+th:
+retf
+not_yet_1 endp
+
+delay proc far
+push (cx)
+mov cx,0fffeh
+dll :inc delayvalue
+dec delayvalue
+inc delayvalue
+dec delayvalue
+loop dll
+pop (cx)
+retf
+delay endp
+
+send proc far
+call initialize
+mov dx,3fDh
+check_send:
+in al,dx
+test al,20h
+JZ check_send
+mov dx,3f8h
+mov al,to_be_sent
+out dx,al
+retf
+send endp
+
+recive proc far
+call initialize
+mov ok,0
+mov dx,3fDh
+in al,dx
+test al,1
+JZ ending
+mov dx,3f8h
+in al,dx
+mov recived,al
+endings:mov ok,1
+retf
+recive endp
+
+send_break proc far
+call binitialize
+mov dx,3fDh
+check2_send:
+in al,dx
+test al,20h
+JZ check2_send
+mov dx,3f8h
+mov al,to_be_sent
+out dx,al
+retf
+send_break endp
+
+recive_break proc far
+call binitialize
+mov ok,0
+mov dx,3fDh
+in al,dx
+test al,1
+JZ ending
+mov dx,3f8h
+in al,dx
+mov recived,al
+ending:mov ok,1
+retf
+recive_break endp
+
+calac1 proc far
+push ax
+mov al,stick11
+mov stick12,al
+mov stick13,al 
+inc stick12
+inc stick13
+inc stick13
+pop ax
+retf
+calac1 endp
+
+calac2 proc far
+push ax
+mov al,stick21
+mov stick22,al
+mov stick23,al 
+inc stick22
+inc stick23
+inc stick23
+pop ax
+retf
+calac2 endp
+
+send_secondary proc far  ;to recive2_secondary
+push ax
+mov al,stick11
+mov to_be_sent,al
+call send
+pop ax
+retf
+send_secondary endp
+
+
+send_sorted proc far  ;to recive2_sorted
+push ax
+mov al,ballx
+mov to_be_sent,al
+call send
+call send_break
+mov al,bally
+mov to_be_sent,al
+call send
+call send_break
+mov al,stick11
+mov to_be_sent,al
+call send
+pop ax
+retf
+send_sorted endp
+
+send2_sorted proc far  ; recive_sorted
+push ax
+mov al,ballx
+mov to_be_sent,al
+call send
+call send_break
+mov al,bally
+mov to_be_sent,al
+call send
+call send_break
+mov al,stick21
+mov to_be_sent,al
+call send
+pop ax
+retf
+send2_sorted endp
+
+recive_sorted proc far
+push ax
+call recive
+mov al,recived
+mov ballx,al
+call recive_break
+call recive
+mov al,recived
+mov bally,al
+call recive_break
+call recive
+mov al,recived
+mov stick21,al
+call calac2
+pop ax
+retf 
+recive_sorted endp
+
+recive2_sorted proc far
+push ax
+call recive
+mov al,recived
+mov ballx,al
+call recive_break
+call recive
+mov al,recived
+mov bally,al
+call recive_break
+call recive
+mov al,recived
+mov stick11,al
+call calac1
+pop ax
+retf 
+recive2_sorted endp
+
+send2_secondary proc far  ;recive_secondary
+push ax
+mov al,stick21
+mov to_be_sent,al
+call send
+pop ax
+retf
+send2_secondary endp
+
+recive_secondary proc far
+push ax
+call recive
+mov al,recived
+mov stick21,al
+call calac2
+pop ax
+retf
+recive_secondary endp
+
+recive2_secondary proc far
+push ax
+call recive
+mov al,recived
+mov stick11,al
+call calac1
+pop ax
+retf
+recive2_secondary endp
+
+
+padding_was_hit proc far
+mov dl,stick11
+cmp bally,dl
+je pad2
+mov dl,stick12
+cmp bally,dl
+je pad1
+mov dl,stick13
+cmp bally,dl
+je pad2
+jmp exit1
+pad1 :mov hit,1
+jmp exit1
+pad2 :mov hit,2
+exit1:
+retf
+padding_was_hit endp
+
+padding2_was_hit proc far
+mov dl,stick21
+cmp bally,dl
+je pad21
+mov dl,stick22
+cmp bally,dl
+je pad22
+mov dl,stick23
+cmp bally,dl
+je pad21
+jmp exit2
+pad21 :mov hit,6
+jmp exit2
+pad22 :mov hit,5
+exit2:
+retf
+padding2_was_hit endp
+
+check_hit proc far
+mov hit,0
+cmp bally,0
+je upperwall
+cmp bally,24
+je lowerwall
+cmp ballx,3
+je check_padding
+cmp ballx,77
+je check_padding2
+cmp ballx,2
+je player2scores
+cmp ballx,78
+je player1scores
+upperwall : mov hit,3
+jmp exit3
+lowerwall : mov hit,4
+jmp exit3
+check_padding :call padding_was_hit
+jmp exit3
+check_padding2 :call padding2_was_hit
+jmp exit3
+player2scores : mov vectory,2
+inc score2
+jmp exit3
+player1scores : mov vectory,1
+inc score1
+exit3 :
+retf
+check_hit endp
+
+move0 proc near
+continue :
+call delay
+cmp has_the_ball,2
+je player2controling
+
+call send_sorted
+call recive_secondary
+call check_move
+
+jmp jj
+player2controling :
+call send2_sorted
+call recive2_secondary
+call check_move_2
+jj:
+cmp vectory,2
+je aplayerscored
+cmp vectory,1
+je aplayerscored
+mov hit,0
+inc ballx
+call clear_screen
+call print_all
+call check_hit
+cmp hit,5
+je callbmove45ssss
+cmp hit,6
+je callbmove45ssss
+jmp continue
+callbmove45ssss : call bmove0
+exit8: jmp continue 
+aplayerscored :
+ret
+move0 endp
+
+bmove0 proc near
+continue2 :
+call delay
+cmp has_the_ball,2
+je player2controlings
+call send_sorted
+call recive_secondary
+call check_move
+jmp jjs
+player2controlings :
+call send2_sorted
+call recive2_secondary
+call check_move_2
+jjs:
+cmp vectory,2
+je aplayerscoreds
+cmp vectory,1
+je aplayerscoreds
+mov hit,0
+dec ballx
+call clear_screen
+call print_all
+call check_hit
+cmp hit,2
+je callmove45ssssssss
+cmp hit,1
+je callmove0ssssssss
+jmp exit13
+callmove45ssssssss : call move0
+jmp exit13
+callmove0ssssssss : call move0
+exit13:
+jmp continue2
+aplayerscoreds :
+ret
+bmove0 endp
+
+Main_prog proc far 
+assume SS:Stack_segment_name,CS:Code_segment_name,DS:Data_segment_name 
+mov AX,Data_segment_name ; load the starting address of the data 
+mov DS,AX ; segment into DS reg.
+call clear_screen
+call print_all
+
+cmp you_are_player,2
+je youareplayer2 
+;;; you are player 1 now !!
+;that means you control padding 1
+you_are_player_1 :
+cmp has_the_ball,2
+je you1_dont_have_the_ball
+check_KeyPress :
+call recive_secondary
+call clear_screen
+call print_all
+mov ah,01h
+int 16h
+jz check_KeyPress
+cmp al,0
+je move
+jmp now
+move : call not_yet_1
+call send_sorted
+call recive_secondary
+call clear_screen
+call print_all
+jmp check_KeyPress
+now:
+cmp al,27h
+jne check3
+jmp EXIT_NOWs                      ;;;;;;;; esc is pressed
+
+mov al,00
+cmp al,00
+je ks
+youareplayer2:jmp youareplayer2s
+ks:
+
+check3 :cmp al,20h
+jne EXIT_NOWs                    ;;if a wrong key then get out
+mov ah,2Ch
+int 21h
+mov angle_dh,dh
+call move0      
+jmp you_are_player_1
+
+you1_dont_have_the_ball:
+mov cx,0fffeh
+you1_dont_have_the_balls :
+call check_move
+call recive_sorted
+call send_secondary
+call clear_screen
+call print_all
+cmp vectory,1
+je you_socred
+cmp vectory,2
+je second_player_scored
+loop you1_dont_have_the_balls
+you_socred:
+mov has_the_ball,2
+jmp you_are_player_1
+second_player_scored:
+mov has_the_ball,1
+jmp you_are_player_1
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov al,00
+cmp al,00
+je kss
+EXIT_NOWs:jmp EXIT_NOWss
+kss:
+
+youareplayer2s :
+cmp has_the_ball,1
+je you2_dont_have_the_ball
+check_KeyPresss :
+mov ah,01h
+int 16h
+call recive2_secondary
+call clear_screen
+call print_all
+jz check_KeyPresss
+cmp al,0
+je moves
+jmp nows
+moves : call not_yet_2
+call send2_sorted
+call recive2_secondary 
+call clear_screen
+call print_all
+jmp check_KeyPress
+nows:
+cmp al,27h
+jne check3s
+EXIT_NOWss:
+jmp EXIT_NOW    
+check3s :cmp al,20h
+jne EXIT_NOW                ;;if a wrong key then get out
+mov ah,2Ch
+int 21h
+mov angle_dh,dh
+call bmove0      
+jmp youareplayer2s
+
+you2_dont_have_the_ball :
+mov cx,0fffeh
+you2_dont_have_the_balls:
+call check_move_2
+call recive2_sorted
+call send2_secondary
+call clear_screen
+call print_all
+cmp vectory,1
+je you2_socred
+cmp vectory,2
+je other_player_scored
+loop you2_dont_have_the_balls
+you2_socred:
+mov has_the_ball,1
+jmp youareplayer2s
+other_player_scored:
+mov has_the_ball,2
+jmp youareplayer2s
+
+EXIT_NOW:
+mov ax,4c00h ; exit program 
+int 21h 
+Main_prog endp
+Code_segment_name ends
+end Main_prog
